@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="No talking on a job. A hands-only VR heist for Meta Quest: your left hand commands Lark, your right commands Rook." />
+    <meta name="theme-color" content="#0b0d12" />
+    <!-- Paste the trailer's YouTube link here to show a Watch the trailer button. -->
+    <meta name="trailer" content="" />
+    <meta property="og:title" content="Silent Partners" />
+    <meta property="og:description" content="A hands-only VR heist. Every order is a hand signal. Plays in Meta Quest Browser." />
+    <meta property="og:image" content="./cover.jpg" />
+    <link rel="icon" href="./mark.svg" type="image/svg+xml" />
+    <title>Silent Partners</title>
+    <style>
+      :root { --lark: #2ec4b6; --rook: #f4a261; --holo: #7fdcff; --ink: #0b0d12; --dim: #c8d3de; --faint: #8a96a3; }
+      html, body { margin: 0; height: 100%; background: var(--ink); color: #fff; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; }
+      #scene-container { position: fixed; inset: 0; }
+      #landing {
+        position: fixed; inset: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center;
+        padding: 28px 24px 72px; box-sizing: border-box; text-align: center;
+        background: radial-gradient(ellipse at 50% 55%, rgba(11, 13, 18, 0.55), rgba(11, 13, 18, 0.93) 70%);
+      }
+      #landing[hidden] { display: none; }
+      .hero { margin: auto 0; display: flex; flex-direction: column; align-items: center; max-width: 980px; }
+      .mark { width: 76px; height: 76px; margin-bottom: 10px; filter: drop-shadow(0 0 18px rgba(127, 220, 255, 0.35)); }
+      h1 { font-size: clamp(44px, 7.2vw, 84px); line-height: 1; margin: 0 0 6px; letter-spacing: 0.04em; text-shadow: 0 0 28px rgba(127, 220, 255, 0.35); }
+      .rule { width: min(520px, 70vw); height: 3px; border: 0; margin: 10px 0 18px; background: linear-gradient(90deg, var(--lark), var(--rook)); border-radius: 2px; }
+      .tag { font-size: clamp(19px, 2.4vw, 25px); max-width: 34em; color: var(--dim); margin: 0 0 26px; line-height: 1.45; }
+      .tag b { font-weight: 700; } .lark { color: var(--lark); } .rook { color: var(--rook); }
+      .signals { list-style: none; padding: 0; margin: 0 0 30px; display: grid; grid-template-columns: repeat(5, minmax(120px, 1fr)); gap: 14px; width: min(980px, 94vw); }
+      .signals li { background: rgba(14, 22, 32, 0.78); border: 1px solid rgba(127, 220, 255, 0.22); border-radius: 18px; padding: 16px 10px 14px; }
+      .signals svg { width: 54px; height: 54px; stroke: #fff; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+      .signals b { display: block; font-size: 21px; margin-top: 6px; }
+      .signals span { display: block; font-size: 16px; color: var(--faint); margin-top: 2px; }
+      #enter {
+        font: 700 28px 'Atkinson Hyperlegible', system-ui, sans-serif; padding: 18px 60px; min-height: 76px; border-radius: 40px;
+        border: 0; background: var(--lark); color: #04211e; cursor: pointer; box-shadow: 0 0 32px rgba(46, 196, 182, 0.4);
+      }
+      #enter:hover:not(:disabled) { filter: brightness(1.08); }
+      #enter:disabled { background: #4a5560; color: var(--dim); cursor: default; box-shadow: none; }
+      .jobs { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; align-items: center; }
+      .job2 { font: 700 22px 'Atkinson Hyperlegible', system-ui, sans-serif; padding: 14px 34px; min-height: 64px; border-radius: 34px; border: 2px solid var(--rook); background: rgba(244, 162, 97, 0.12); color: #fff; cursor: pointer; }
+      .job2:hover:not(:disabled) { background: rgba(244, 162, 97, 0.25); }
+      .job2[hidden] { display: none; }
+      .mixed { display: flex; gap: 10px; align-items: center; font-size: 19px; color: var(--dim); margin: 16px 0 0; cursor: pointer; }
+      .mixed[hidden] { display: none; }
+      .mixed input { width: 26px; height: 26px; accent-color: var(--lark); }
+      #enter:focus-visible, button:focus-visible, a:focus-visible { outline: 4px solid #fff; outline-offset: 4px; }
+      .req { font-size: 17px; color: var(--faint); margin: 14px 0 6px; }
+      #status { min-height: 1.5em; font-size: 20px; color: #ffb3b3; max-width: 34em; white-space: pre-wrap; margin: 6px 0; }
+      #status.info { color: var(--dim); }
+      #best { font-size: 18px; color: var(--dim); margin: 4px 0; }
+      .small { font: 400 17px 'Atkinson Hyperlegible', system-ui, sans-serif; color: var(--dim); background: none; border: 1px solid #5a6672; border-radius: 20px; padding: 8px 18px; margin: 6px; cursor: pointer; text-decoration: none; }
+      footer { margin-top: 26px; font-size: 15px; color: var(--faint); line-height: 1.6; max-width: 60em; }
+      #trailer { display: inline-block; margin: 12px 0 4px; }
+      #trailer[hidden] { display: none; }
+      #shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(980px, 92vw); margin: 18px 0 0; }
+      #shots img { width: 100%; border-radius: 14px; border: 1px solid rgba(127, 220, 255, 0.22); }
+      #shots[hidden] { display: none; }
+      @media (max-width: 760px) { .signals { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+    <script type="module" crossorigin src="./assets/index-BDMx505r.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B5FSpRSH.css">
+  </head>
+  <body>
+    <div id="scene-container"></div>
+    <main id="landing">
+      <div class="hero">
+        <img class="mark" src="./mark.svg" alt="" />
+        <h1>Silent Partners</h1>
+        <hr class="rule" />
+        <p class="tag">No talking on a job. A hands-only VR heist: your left hand commands <b class="lark">Lark</b>, your right commands <b class="rook">Rook</b>, and every order is a hand signal.</p>
+        <ul class="signals" aria-label="The signals">
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="13" width="28" height="25" rx="8" /><path d="M17 13v9M24 13v9M31 13v9M10 29h13a4 4 0 0 0 0-7" /></svg>
+            <b>Fist</b><span>Freeze</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 23V7a3.5 3.5 0 0 1 7 0v16" /><rect x="10" y="21" width="28" height="20" rx="7" /><path d="M24 21v7M31 21v7M10 33h12" /></svg>
+            <b>Point</b><span>Go there</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 24V9a3.5 3.5 0 0 1 7 0v13" /><rect x="14" y="22" width="22" height="20" rx="6" /><path d="M24 28.5h12M24 34h12" /></svg>
+            <b>Thumbs up</b><span>Do the job</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="24" width="16" height="16" rx="5" /><path d="M6 24v-9M10 24V12M14 24V13M18 24v-8M19 32l4-5" /><rect x="29" y="24" width="16" height="16" rx="5" /><path d="M42 24v-9M38 24V12M34 24V13M30 24v-8M29 32l-4-5" /></svg>
+            <b>Both palms up</b><span>Pause</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M17 23V7a3.5 3.5 0 0 1 7 0v16" /><path d="M24 22V5a3.5 3.5 0 0 1 7 0v17" /><rect x="10" y="21" width="28" height="20" rx="7" /><path d="M31 21v7M10 33h12" /></svg>
+            <b>Two fingers</b><span>Toss a coin (Job 2)</span>
+          </li>
+        </ul>
+        <div class="jobs">
+          <button id="enter" disabled>Loading…</button>
+          <button id="enter2" class="job2" disabled hidden>Job 2: Halloran’s</button>
+        </div>
+        <label id="mixed-row" class="mixed" hidden><input id="mixed" type="checkbox" /> Mixed reality: play on your own desk, with your room around you</label>
+        <p class="req">Meta Quest 2, 3, 3S or Pro · hand tracking on · seated · Job 1 about six minutes, Job 2 about ten</p>
+        <p class="req">Play one-handed, swap hands, re-record any signal in your own hand shape, or turn on Assist. Getting seen rewinds; there's no game over.</p>
+        <p id="status" role="status" aria-live="polite"></p>
+        <a id="trailer" class="small" target="_blank" rel="noopener" hidden>Watch the trailer</a>
+        <div id="shots" hidden>
+          <img src="./shots/freeze.jpg" alt="A player's hands over the hologram; a fist freezes Lark in cover" loading="lazy" />
+          <img src="./shots/rewind.jpg" alt="The hologram turns red and rewinds after Lark is seen" loading="lazy" />
+          <img src="./shots/lift.jpg" alt="Both thumbs up to lift the painting together" loading="lazy" />
+        </div>
+        <p id="best"></p>
+        <div>
+          <button id="copy-log" class="small" hidden>Copy last run log</button>
+          <a id="download" class="small" download="silent-partners-hands.json" hidden>Download hand recording</a>
+        </div>
+        <footer>Built with Meta's Immersive Web SDK for Meta Quest. No audio files and no 3D models: every sound and shape is made in code. Nothing leaves your headset.</footer>
+      </div>
+    </main>
+  </body>
+</html>
